@@ -1321,16 +1321,15 @@ function checkWin() {
     const isFull = Object.keys(G.grid).length > 0 && Object.keys(G.grid).every(k => G.user[k] === G.grid[k]);
     
     if(isFull) {
-        // 1. Vis vinn-skjermen umiddelbart
+        // 1. Vis vinn-vinduet med en gang
         document.getElementById('win').style.display = 'flex';
         
-        // 2. Skyt opp konfetti samtidig
-        // Vi setter zIndex til 4000 slik at konfettien flyr OVER "HURRA"-vinduet
+        // 2. Skyt konfetti som legger seg OVER vinduet
         confetti({ 
-            particleCount: 150, 
-            spread: 70, 
+            particleCount: 180, 
+            spread: 80, 
             origin: { y: 0.6 },
-            zIndex: 4000 
+            zIndex: 9999 // Dette tvinger konfettien foran alt annet!
         });
     }
 }
