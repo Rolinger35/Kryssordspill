@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Norsk Kryssord</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { 
             --bg: #0f172a; --panel: #1e293b; --accent: #facc15; 
@@ -21,30 +22,31 @@
         }
 
         header { flex-shrink: 0; display: flex; justify-content: space-between; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid #334155; align-items: center; z-index: 100; }
-        #size-choice { padding: 6px; border-radius: 4px; background: #334155; white; color: white; font-weight: bold; }
+        
+        /* HER ER STILEN FOR MELLOM/MINI/STOR-VELGEREN */
+        #size-choice { 
+            padding: 6px; 
+            border-radius: 4px; 
+            background: #334155; /* Mørk grå/blå */
+            color: white; 
+            font-weight: bold; 
+            border: 1px solid #475569;
+        }
         
         #clue-bar { flex-shrink: 0; padding: 10px; background: #334155; color: var(--accent); font-weight: 600; min-height: 50px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; text-align: center; border-bottom: 1px solid #475569; }
         
         .controls { flex-shrink: 0; padding: 6px; background: var(--panel); display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; z-index: 100; }
 
-        #grid-wrapper { 
-            flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; padding: 10px; min-height: 0; overflow: hidden;
-        }
+        #grid-wrapper { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; padding: 10px; min-height: 0; overflow: hidden; }
 
-        #grid { 
-            display: grid; gap: 1px; background: #334155; border: 2px solid #334155; height: 100%; max-width: 100%; aspect-ratio: 1 / 1; margin: auto;
-        }
+        #grid { display: grid; gap: 1px; background: #334155; border: 2px solid #334155; height: 100%; max-width: 100%; aspect-ratio: 1 / 1; margin: auto; }
 
         .cell { 
             background: white; color: #1e293b; position: relative; display: flex; justify-content: center; align-items: center; font-weight: bold; 
-            font-size: 3cqw; cursor: pointer;
-            container-type: size;
-            z-index: 1;
+            font-size: 3cqw; cursor: pointer; container-type: size; z-index: 1;
         }
 
         .cell.black { background: var(--bg); border: none; cursor: default; }
-        
-        /* Prioritering av farger: active > track > correct/wrong */
         .cell.track { background: var(--track) !important; }
         .cell.active { background: var(--active-yellow) !important; box-shadow: inset 0 0 0 2px #fde047; z-index: 5 !important; }
         .cell.correct { background: var(--correct) !important; color: white; }
@@ -62,17 +64,21 @@
         .btn-yellow { background: var(--accent); color: #0f172a; }
         .btn-red { background: #ef4444; color: white; }
         .btn-purple { background: #8b5cf6; color: white; }
+
+        .win-content { margin: auto; text-align: center; }
+        .win-content h1 { font-size: 3.5rem; color: var(--accent); margin-bottom: 10px; }
+        .win-buttons { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <header>
-    <select id="size-choice" onchange="startNewOrLoad()"> 
+    <select id="size-choice" onchange="startNewOrLoad()">
         <option value="mini">Mini</option>
         <option value="medium" selected>Medium</option>
         <option value="large">Stor</option>
     </select>
-    <div style="display:flex; gap:6px;"> 
+    <div style="display:flex; gap:6px;">
         <button class="btn-yellow" onclick="openWordBook()">📖</button>
         <button class="btn-blue" onclick="openAddWord()">➕</button>
         <button class="btn-blue" onclick="forceNewGame()">NYTT</button>
@@ -95,6 +101,17 @@
 
 <div id="keyboard"></div>
 
+<div id="win" class="modal">
+    <div class="win-content">
+        <h1>🎉 HURRA!</h1>
+        <p>Du er en mester! Hele brettet er løst.</p>
+        <div class="win-buttons">
+            <button class="btn-blue" style="width: 220px; padding: 15px;" onclick="forceNewGame()">SPILL IGJEN</button>
+            <button class="btn-yellow" style="width: 220px; padding: 15px;" onclick="closeModals()">SE BRETTET</button>
+        </div>
+    </div>
+</div>
+
 <div id="wordbook-modal" class="modal">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
         <h2>Min Glosebok</h2>
@@ -111,12 +128,6 @@
     <input type="text" id="new-word" placeholder="ORD" style="width:100%; padding:12px; margin-bottom:10px; text-transform:uppercase; background:#0f172a; color:white; border:1px solid #334155">
     <input type="text" id="new-clue" placeholder="LEDETRÅD" style="width:100%; padding:12px; margin-bottom:10px; background:#0f172a; color:white; border:1px solid #334155">
     <button class="btn-blue" style="width:100%; padding:15px;" onclick="addNewWordToBank()">LAGRE ORD</button>
-</div>
-
-<div id="win" class="modal" style="justify-content:center; align-items:center; text-align:center;">
-    <h1 style="font-size:3rem; color:var(--accent);">🎉 HURRA!</h1>
-    <p>Du har løst brettet!</p>
-    <button class="btn-blue" onclick="forceNewGame()" style="margin-top:20px; padding:15px;">SPILL IGJEN</button>
 </div>
 
 <script>
@@ -1253,7 +1264,6 @@ function render() {
                 let t = document.createElement("div"); t.id = "t-"+k; 
                 t.innerText = G.user[k] || "";
                 d.appendChild(t);
-                // HER SIKRER VI AT KLIKK FUNGERER
                 d.onclick = (e) => { e.stopPropagation(); selectCell(k); };
             }
             d.id = "c-"+k; el.appendChild(d);
@@ -1263,18 +1273,11 @@ function render() {
 }
 
 function selectCell(k) {
-    // FJERN SJEKK-FARGER VED KLIKK
     document.querySelectorAll('.cell').forEach(e => e.classList.remove('correct', 'wrong'));
-    
     let ws = G.words.filter(w => w.cells.some(c => `${c.r}-${c.c}` === k));
     if(!ws.length) return;
-    
-    if(G.sel === k && ws.length > 1) {
-        G.dir = (G.dir === 'h' ? 'v' : 'h');
-    } else {
-        G.sel = k;
-        if(!ws.find(o => o.dir === G.dir)) G.dir = ws[0].dir;
-    }
+    if(G.sel === k && ws.length > 1) { G.dir = (G.dir === 'h' ? 'v' : 'h'); } 
+    else { G.sel = k; if(!ws.find(o => o.dir === G.dir)) G.dir = ws[0].dir; }
     updateUI();
 }
 
@@ -1315,7 +1318,11 @@ function resetCurrentWord() {
 }
 
 function checkWin() { 
-    if(Object.keys(G.grid).length > 0 && Object.keys(G.grid).every(k => G.user[k] === G.grid[k])) document.getElementById('win').style.display='flex';
+    const isFull = Object.keys(G.grid).length > 0 && Object.keys(G.grid).every(k => G.user[k] === G.grid[k]);
+    if(isFull) {
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        document.getElementById('win').style.display='flex';
+    }
 }
 
 function updateUI() {
