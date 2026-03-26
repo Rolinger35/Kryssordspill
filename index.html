@@ -21,7 +21,7 @@
         }
 
         header { flex-shrink: 0; display: flex; justify-content: space-between; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid #334155; align-items: center; z-index: 100; }
-        #size-choice { padding: 6px; border-radius: 4px; background: #334155; color: white; font-weight: bold; }
+        #size-choice { padding: 6px; border-radius: 4px; background: #334155; white; color: white; font-weight: bold; }
         
         #clue-bar { flex-shrink: 0; padding: 10px; background: #334155; color: var(--accent); font-weight: 600; min-height: 50px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; text-align: center; border-bottom: 1px solid #475569; }
         
@@ -37,13 +37,16 @@
 
         .cell { 
             background: white; color: #1e293b; position: relative; display: flex; justify-content: center; align-items: center; font-weight: bold; 
-            font-size: 2.5cqw; /* Mindre skrift som forespurt */
+            font-size: 2.5cqw; cursor: pointer;
             container-type: size;
+            z-index: 1;
         }
 
-        .cell.black { background: var(--bg); border: none; }
+        .cell.black { background: var(--bg); border: none; cursor: default; }
+        
+        /* Prioritering av farger: active > track > correct/wrong */
         .cell.track { background: var(--track) !important; }
-        .cell.active { background: var(--active-yellow) !important; box-shadow: inset 0 0 0 2px #fde047; z-index: 5; }
+        .cell.active { background: var(--active-yellow) !important; box-shadow: inset 0 0 0 2px #fde047; z-index: 5 !important; }
         .cell.correct { background: var(--correct) !important; color: white; }
         .cell.wrong { background: var(--wrong) !important; color: white; }
         
@@ -64,12 +67,12 @@
 <body>
 
 <header>
-    <select id="size-choice" onchange="startNewOrLoad()">
+    <select id="size-choice" onchange="startNewOrLoad()"> 
         <option value="mini">Mini</option>
-        <option value="medium">Medium</option>
+        <option value="medium" selected>Medium</option>
         <option value="large">Stor</option>
     </select>
-    <div style="display:flex; gap:6px;">
+    <div style="display:flex; gap:6px;"> 
         <button class="btn-yellow" onclick="openWordBook()">📖</button>
         <button class="btn-blue" onclick="openAddWord()">➕</button>
         <button class="btn-blue" onclick="forceNewGame()">NYTT</button>
@@ -1155,7 +1158,7 @@ const DEFAULT_WORDS = [
   { w: "SKALKOMME", c: "Framtid av 'å komme'" }
 ];
 
-let G = { size: 10, target: 6, grid: {}, words: [], user: {}, sel: null, dir: 'h', markers: {} };
+let G = { size: 12, target: 11, grid: {}, words: [], user: {}, sel: null, dir: 'h', markers: {} };
 
 function getWordBank() {
     const custom = JSON.parse(localStorage.getItem('custom_words') || '[]');
@@ -1176,7 +1179,6 @@ function forceNewGame() {
 
 function initGame() {
     const choice = document.getElementById('size-choice').value;
-    // GJENINNFØRT MINI-LOGIKK HER:
     if (choice === 'mini') { G.size = 8; G.target = 6; }
     else if (choice === 'medium') { G.size = 12; G.target = 11; }
     else { G.size = 14; G.target = 17; }
@@ -1185,7 +1187,7 @@ function initGame() {
     closeModals();
 
     let pool = getWordBank().sort(() => Math.random() - 0.5);
-    forcePlace(pool.pop(), 2, 2, 'h');
+    forcePlace(pool.pop(), 1, 1, 'h');
 
     for(let attempt = 0; attempt < 3000; attempt++) {
         if(G.words.length >= G.target) break;
@@ -1251,7 +1253,8 @@ function render() {
                 let t = document.createElement("div"); t.id = "t-"+k; 
                 t.innerText = G.user[k] || "";
                 d.appendChild(t);
-                d.onclick = () => selectCell(k);
+                // HER SIKRER VI AT KLIKK FUNGERER
+                d.onclick = (e) => { e.stopPropagation(); selectCell(k); };
             }
             d.id = "c-"+k; el.appendChild(d);
         }
@@ -1260,10 +1263,18 @@ function render() {
 }
 
 function selectCell(k) {
+    // FJERN SJEKK-FARGER VED KLIKK
+    document.querySelectorAll('.cell').forEach(e => e.classList.remove('correct', 'wrong'));
+    
     let ws = G.words.filter(w => w.cells.some(c => `${c.r}-${c.c}` === k));
     if(!ws.length) return;
-    if(G.sel === k && ws.length > 1) G.dir = (G.dir === 'h' ? 'v' : 'h');
-    else { G.sel = k; if(!ws.find(o => o.dir === G.dir)) G.dir = ws[0].dir; }
+    
+    if(G.sel === k && ws.length > 1) {
+        G.dir = (G.dir === 'h' ? 'v' : 'h');
+    } else {
+        G.sel = k;
+        if(!ws.find(o => o.dir === G.dir)) G.dir = ws[0].dir;
+    }
     updateUI();
 }
 
@@ -1277,14 +1288,31 @@ function checkActiveWord() {
     });
 }
 
-function revealLetter() { if(G.sel) { G.user[G.sel] = G.grid[G.sel]; updateUI(); checkWin(); saveGame(); } }
+function revealLetter() { 
+    if(G.sel) { 
+        G.user[G.sel] = G.grid[G.sel]; 
+        document.querySelectorAll('.cell').forEach(e => e.classList.remove('correct', 'wrong'));
+        updateUI(); checkWin(); saveGame(); 
+    } 
+}
 
 function revealFullWord() {
     let aw = getAW();
-    if(aw) { aw.cells.forEach((c, i) => G.user[`${c.r}-${c.c}`] = aw.w[i]); updateUI(); checkWin(); saveGame(); }
+    if(aw) { 
+        aw.cells.forEach((c, i) => G.user[`${c.r}-${c.c}`] = aw.w[i]); 
+        document.querySelectorAll('.cell').forEach(e => e.classList.remove('correct', 'wrong'));
+        updateUI(); checkWin(); saveGame(); 
+    }
 }
 
-function resetCurrentWord() { let aw = getAW(); if(aw) { aw.cells.forEach(c => G.user[`${c.r}-${c.c}`] = ""); updateUI(); saveGame(); } }
+function resetCurrentWord() { 
+    let aw = getAW(); 
+    if(aw) { 
+        aw.cells.forEach(c => G.user[`${c.r}-${c.c}`] = ""); 
+        document.querySelectorAll('.cell').forEach(e => e.classList.remove('correct', 'wrong'));
+        updateUI(); saveGame(); 
+    } 
+}
 
 function checkWin() { 
     if(Object.keys(G.grid).length > 0 && Object.keys(G.grid).every(k => G.user[k] === G.grid[k])) document.getElementById('win').style.display='flex';
@@ -1304,6 +1332,7 @@ function updateUI() {
 
 function handleInput(key) {
     let aw = getAW(); if(!aw) return;
+    document.querySelectorAll('.cell').forEach(e => e.classList.remove('correct', 'wrong'));
     let idx = aw.cells.findIndex(c => `${c.r}-${c.c}` === G.sel);
     if(key === "⌫") { G.user[G.sel] = ""; if(idx > 0) G.sel = `${aw.cells[idx-1].r}-${aw.cells[idx-1].c}`; } 
     else { G.user[G.sel] = key; if(idx < aw.cells.length - 1) G.sel = `${aw.cells[idx+1].r}-${aw.cells[idx+1].c}`; }
