@@ -1319,12 +1319,21 @@ function resetCurrentWord() {
 
 function checkWin() { 
     const isFull = Object.keys(G.grid).length > 0 && Object.keys(G.grid).every(k => G.user[k] === G.grid[k]);
+    
     if(isFull) {
-        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-        document.getElementById('win').style.display='flex';
+        // 1. Vis vinn-skjermen umiddelbart
+        document.getElementById('win').style.display = 'flex';
+        
+        // 2. Skyt opp konfetti samtidig
+        // Vi setter zIndex til 4000 slik at konfettien flyr OVER "HURRA"-vinduet
+        confetti({ 
+            particleCount: 150, 
+            spread: 70, 
+            origin: { y: 0.6 },
+            zIndex: 4000 
+        });
     }
 }
-
 function updateUI() {
     document.querySelectorAll('.cell').forEach(e => e.classList.remove('active', 'track'));
     let aw = getAW();
