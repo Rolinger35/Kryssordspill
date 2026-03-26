@@ -3,78 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Norsk Kryssord med Glosebok</title>
+    <title>Norsk Kryssord Pro</title>
     <style>
         :root { 
             --bg: #0f172a; --panel: #1e293b; --accent: #facc15; 
             --track: #bae6fd; --active-yellow: #fef9c3; 
-            --correct: #22c55e; --wrong: #ef4444; --reveal: #8b5cf6; 
+            --correct: #22c55e; --wrong: #ef4444; 
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-        html, body { margin: 0; padding: 0; width: 100%; height: 100dvh; background: var(--bg); color: white; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; display: flex; flex-direction: column; }
         
-        header { flex-shrink: 0; display: flex; justify-content: space-between; padding: 10px; background: var(--panel); border-bottom: 1px solid #334155; align-items: center; gap: 5px; }
-        #clue-bar { flex-shrink: 0; padding: 12px; background: #334155; color: var(--accent); font-weight: 600; min-height: 55px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; text-align: center; }
-        .controls { flex-shrink: 0; padding: 8px; background: var(--panel); display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; border-bottom: 1px solid #334155; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
         
-        #grid-container { flex-grow: 1; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 10px; background: #020617; }
-        #grid { display: grid; gap: 1px; background: #334155; border: 2px solid #334155; margin: 0 auto; }
+        html, body { 
+            width: 100%; height: 100%; height: 100dvh; 
+            background: var(--bg); color: white; 
+            font-family: -apple-system, sans-serif; 
+            overflow: hidden; display: flex; flex-direction: column; 
+        }
+
+        header { flex-shrink: 0; display: flex; justify-content: space-between; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid #334155; align-items: center; z-index: 100; }
+        #clue-bar { flex-shrink: 0; padding: 10px; background: #334155; color: var(--accent); font-weight: 600; min-height: 50px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; text-align: center; border-bottom: 1px solid #475569; }
         
-        .cell { width: 32px; height: 32px; background: white; color: black; position: relative; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 16px; }
+        /* Kontrollpanelet er nå mer kompakt for å gi plass til den nye knappen */
+        .controls { flex-shrink: 0; padding: 6px; background: var(--panel); display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; z-index: 100; }
+
+        #grid-wrapper { 
+            flex: 1; 
+            width: 100%;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 10px; 
+            min-height: 0; 
+            overflow: hidden;
+        }
+
+        #grid { 
+            display: grid; 
+            gap: 1px; 
+            background: #334155; 
+            border: 2px solid #334155;
+            height: 100%;
+            max-width: 100%;
+            aspect-ratio: 1 / 1; 
+            margin: auto;
+        }
+
+        .cell { 
+            background: white; color: black; 
+            position: relative; display: flex; 
+            justify-content: center; align-items: center; 
+            font-weight: bold; 
+            /* GJORT MINDRE: Fra 3cqw til 2.5cqw for å unngå at bokstaver "sprenger" ruten */
+            font-size: 2.5cqw; 
+            container-type: size;
+        }
+
         .cell.black { background: var(--bg); border: none; }
         .cell.track { background: var(--track) !important; }
-        .cell.active { background: var(--active-yellow) !important; box-shadow: inset 0 0 0 3px #fde047; z-index: 2; }
+        .cell.active { background: var(--active-yellow) !important; box-shadow: inset 0 0 0 2px #fde047; z-index: 5; }
         .cell.correct { background: var(--correct) !important; color: white; }
         .cell.wrong { background: var(--wrong) !important; color: white; }
-        .number { position: absolute; top: 1px; left: 2px; font-size: 8px; color: #64748b; pointer-events: none; }
+        
+        .number { 
+            position: absolute; top: 1px; left: 1px; 
+            font-size: 7px; color: #64748b; 
+            pointer-events: none; z-index: 10;
+        }
 
-        #keyboard { flex-shrink: 0; background: var(--panel); padding: 5px 2px 20px 2px; }
-        .kb-row { display: flex; justify-content: center; margin-bottom: 4px; }
-        .key { margin: 2px; padding: 12px 0; background: #475569; border-radius: 5px; flex: 1; max-width: 38px; font-weight: bold; font-size: 14px; text-align: center; color: white; box-shadow: 0 3px 0 #0f172a; cursor: pointer; }
-        
-        /* Modals */
+        #keyboard { flex-shrink: 0; background: var(--panel); padding: 5px 2px env(safe-area-inset-bottom, 15px); z-index: 100; }
+        .kb-row { display: flex; justify-content: center; margin-bottom: 3px; }
+        .key { margin: 1px; padding: 12px 0; background: #475569; border-radius: 4px; flex: 1; max-width: 36px; font-weight: bold; font-size: 14px; text-align: center; color: white; border: none; cursor: pointer; }
+
         .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.98); display: none; flex-direction: column; padding: 20px; z-index: 3000; overflow-y: auto; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
-        .word-item { background: #1e293b; padding: 15px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-        
-        input { padding: 12px; border-radius: 5px; border: 1px solid #334155; background: #0f172a; color: white; margin-bottom: 10px; width: 100%; }
-        
-        button { padding: 8px 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        button { padding: 6px 10px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
         .btn-blue { background: #2563eb; color: white; }
-        .btn-green { background: #10b981; color: white; }
-        .btn-purple { background: var(--reveal); color: white; }
         .btn-yellow { background: var(--accent); color: #0f172a; }
         .btn-red { background: #ef4444; color: white; }
+        .btn-purple { background: #8b5cf6; color: white; }
     </style>
 </head>
 <body>
 
 <header>
-    <select id="size-choice" onchange="startNewOrLoad()">
+    <select id="size-choice" onchange="startNewOrLoad()" style="padding:6px; border-radius:4px; background: white;">
         <option value="mini">Mini</option>
         <option value="medium" selected>Medium</option>
         <option value="large">Stor</option>
     </select>
-    <button class="btn-yellow" onclick="openWordBook()">📖 BOK</button>
-    <button class="btn-blue" onclick="openAddWord()">➕ ORD</button>
-    <button class="btn-blue" onclick="forceNewGame()">NYTT</button>
+    <div style="display:flex; gap:6px;">
+        <button class="btn-yellow" onclick="openWordBook()">📖</button>
+        <button class="btn-blue" onclick="openAddWord()">➕</button>
+        <button class="btn-blue" onclick="forceNewGame()">NYTT</button>
+    </div>
 </header>
 
-<div id="clue-bar">Velg en rute</div>
+<div id="clue-bar">Velg en hvit rute</div>
 
 <div class="controls">
-    <button class="btn-green" onclick="checkActiveWord()">SJEKK</button>
+    <button style="background:#10b981; color:white;" onclick="checkActiveWord()">SJEKK</button>
+    <button class="btn-yellow" onclick="saveToStudyList()">LAGRE</button>
     <button class="btn-purple" onclick="revealLetter()">BOKSTAV</button>
-    <button class="btn-purple" onclick="revealWord()">ORD</button>
-    <button class="btn-yellow" onclick="saveToStudyList()">⭐ LAGRE</button>
+    <button class="btn-purple" style="background:#6d28d9;" onclick="revealFullWord()">AVSLØR ORD</button>
     <button class="btn-red" onclick="resetCurrentWord()">TØM</button>
 </div>
 
-<div id="grid-container"><div id="grid"></div></div>
+<div id="grid-wrapper">
+    <div id="grid"></div>
+</div>
+
 <div id="keyboard"></div>
 
 <div id="wordbook-modal" class="modal">
-    <div class="modal-header">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
         <h2>Min Glosebok</h2>
         <button class="btn-red" onclick="closeModals()">LUKK</button>
     </div>
@@ -82,26 +122,32 @@
 </div>
 
 <div id="addword-modal" class="modal">
-    <div class="modal-header">
-        <h2>Legg til nye ord</h2>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2>Legg til ord</h2>
         <button class="btn-red" onclick="closeModals()">LUKK</button>
     </div>
-    <input type="text" id="new-word" placeholder="Ordet (f.eks: SYKKEL)" style="text-transform: uppercase;">
-    <input type="text" id="new-clue" placeholder="Ledetråd (f.eks: Fremkomstmiddel på to hjul)">
-    <button class="btn-green" style="width:100%; padding:15px;" onclick="addNewWordToBank()">LAGRE ORD I BANKEN</button>
-    <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 20px;">Dine egne ord vil dukke opp neste gang du starter et "NYTT" spill.</p>
+    <input type="text" id="new-word" placeholder="ORD" style="width:100%; padding:12px; margin-bottom:10px; text-transform:uppercase; background:#0f172a; color:white; border:1px solid #334155">
+    <input type="text" id="new-clue" placeholder="LEDETRÅD" style="width:100%; padding:12px; margin-bottom:10px; background:#0f172a; color:white; border:1px solid #334155">
+    <button class="btn-blue" style="width:100%; padding:15px;" onclick="addNewWordToBank()">LAGRE ORD</button>
 </div>
 
-<div id="win" class="modal" style="justify-content:center; align-items:center;">
-    <h1 style="font-size:3rem; color:var(--accent);">🎉 HURRA!</h1>
-    <p>Du klarte hele brettet!</p>
-    <button class="btn-blue" onclick="forceNewGame()">SPILL IGJEN</button>
-    <button class="btn-yellow" style="margin-top:10px;" onclick="closeModals()">SE BRETTET</button>
+<div id="win" class="modal" style="justify-content:center; align-items:center; text-align:center;">
+    <h1 style="font-size:3rem; color:var(--accent); margin-bottom:10px;">🎉 HURRA!</h1>
+    <p style="margin-bottom:20px;">Du har løst brettet!</p>
+    <button class="btn-blue" onclick="forceNewGame()" style="width:200px; padding:15px; margin-bottom:10px;">SPILL IGJEN</button>
+    <button class="btn-yellow" onclick="closeModals()" style="width:200px; padding:15px;">SE BRETTET</button>
 </div>
 
 <script>
 const DEFAULT_WORDS = [
     {w:"BANAN", c:"Gul frukt"}, {w:"SOL", c:"Varm stjerne"}, {w:"KAFFE", c:"Mørk drikk"}, 
+    {w:"NORGE", c:"Landet vårt"}, {w:"SKOLE", c:"Her lærer vi"}, {w:"BIL", c:"Kjøretøy"}, 
+    {w:"ELG", c:"Skogens konge"}, {w:"VANN", c:"Det vi drikker"}, {w:"TRE", c:"Plante med stamme"},
+    {w:"BÅT", c:"Flyter på sjøen"}, {w:"IS", c:"Kald og god"}, {w:"OST", c:"Gult på brødet"},
+    {w:"BRØD", c:"Mat fra bakeren"}, {w:"SKO", c:"Går vi med"}, {w:"HUND", c:"Sier voff"},
+    {w:"KATT", c:"Sier mjau"}, {w:"FLY", c:"Høyt i sky"}, {w:"OSLO", c:"Hovedstaden"},
+    {w:"KLOKKE", c:"Hva er tiden?"}, {w:"GRØNN", c:"Gressets farge"}, {w:"VEST", c:"Himmelretning"},
+    {w:"SYKKEL", c:"To hjul og pedaler"}, {w:"VINTER", c:"Snøens årstid"}, {w:"SOMMER", c:"Varmeste årstid"}, {w:"BANAN", c:"Gul frukt"}, {w:"SOL", c:"Varm stjerne"}, {w:"KAFFE", c:"Mørk drikk"}, 
     {w:"NORGE", c:"Landet vårt"}, {w:"SKOLE", c:"Her lærer vi"}, {w:"BIL", c:"Kjøretøy"}, 
     {w:"ELG", c:"Skogens konge"}, {w:"VANN", c:"Det vi drikker"}, {w:"TRE", c:"Plante med stamme"},
     {w:"BÅT", c:"Flyter på sjøen"}, {w:"IS", c:"Kald og god"}, {w:"OST", c:"Gult på brødet"},
@@ -1132,9 +1178,8 @@ const DEFAULT_WORDS = [
   { w: "SKALKOMME", c: "Framtid av 'å komme'" }
 ];
 
-let G = { size: 11, target: 10, grid: {}, words: [], user: {}, sel: null, dir: 'h', markers: {} };
+let G = { size: 12, target: 11, grid: {}, words: [], user: {}, sel: null, dir: 'h', markers: {} };
 
-// --- NYTT SYSTEM FOR ORD OG GLOSEBOK ---
 function getWordBank() {
     const custom = JSON.parse(localStorage.getItem('custom_words') || '[]');
     return [...DEFAULT_WORDS, ...custom];
@@ -1143,54 +1188,43 @@ function getWordBank() {
 function addNewWordToBank() {
     const w = document.getElementById('new-word').value.toUpperCase().trim();
     const c = document.getElementById('new-clue').value.trim();
-    if(w.length < 2 || c.length < 3) return alert("Vennligst skriv inn både ord og ledetråd.");
-    
+    if(w.length < 2 || c.length < 2) return;
     const custom = JSON.parse(localStorage.getItem('custom_words') || '[]');
     custom.push({w, c});
     localStorage.setItem('custom_words', JSON.stringify(custom));
-    
     document.getElementById('new-word').value = "";
     document.getElementById('new-clue').value = "";
-    alert(`"${w}" er lagret og vil dukke opp i fremtidige spill!`);
+    closeModals();
+    alert("Lagret! Start et nytt spill for å bruke ordet.");
 }
 
 function saveToStudyList() {
     let aw = getAW();
-    if(!aw) return alert("Velg et ord først!");
-    
-    let studyList = JSON.parse(localStorage.getItem('study_list') || '[]');
-    if(!studyList.find(item => item.w === aw.w)) {
-        studyList.push({w: aw.w, c: aw.c});
-        localStorage.setItem('study_list', JSON.stringify(studyList));
-        alert(`"${aw.w}" lagret i gloseboken!`);
-    } else {
-        alert("Dette ordet er allerede i boken din.");
+    if(!aw) return;
+    let list = JSON.parse(localStorage.getItem('study_list') || '[]');
+    if(!list.find(i => i.w === aw.w)) {
+        list.push({w: aw.w, c: aw.c});
+        localStorage.setItem('study_list', JSON.stringify(list));
+        alert("Lagret i glosebok!");
     }
 }
 
 function openWordBook() {
     const list = JSON.parse(localStorage.getItem('study_list') || '[]');
     const container = document.getElementById('word-list');
-    container.innerHTML = list.length ? "" : "<p>Gloseboken er tom. Lagre ord mens du spiller!</p>";
-    
+    container.innerHTML = list.length ? "" : "<p>Gloseboken er tom.</p>";
     list.forEach((item, index) => {
         const div = document.createElement('div');
-        div.className = 'word-item';
-        div.innerHTML = `
-            <div>
-                <strong style="color:var(--accent)">${item.w}</strong><br>
-                <small>${item.c}</small>
-            </div>
-            <button class="btn-red" onclick="removeFromStudyList(${index})">Slett</button>
-        `;
+        div.style = "background:#1e293b; padding:12px; margin-bottom:8px; border-radius:6px; display:flex; justify-content:space-between; align-items:center;";
+        div.innerHTML = `<div><b>${item.w}</b>: ${item.c}</div><button onclick="removeFromStudyList(${index})" style="background:#ef4444; color:white; border:none; padding:5px 10px; border-radius:4px">Slett</button>`;
         container.appendChild(div);
     });
     document.getElementById('wordbook-modal').style.display = 'flex';
 }
 
-function removeFromStudyList(index) {
+function removeFromStudyList(i) {
     let list = JSON.parse(localStorage.getItem('study_list') || '[]');
-    list.splice(index, 1);
+    list.splice(i, 1);
     localStorage.setItem('study_list', JSON.stringify(list));
     openWordBook();
 }
@@ -1198,7 +1232,6 @@ function removeFromStudyList(index) {
 function openAddWord() { document.getElementById('addword-modal').style.display = 'flex'; }
 function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
 
-// --- SPILL-LOGIKK (GJENBRUKT OG TILPASSET) ---
 function saveGame() {
     const choice = document.getElementById('size-choice').value;
     localStorage.setItem('kryssord_save_' + choice, JSON.stringify({
@@ -1206,50 +1239,44 @@ function saveGame() {
     }));
 }
 
-function loadGame() {
+function startNewOrLoad() {
     const choice = document.getElementById('size-choice').value;
     const saved = localStorage.getItem('kryssord_save_' + choice);
-    if (!saved) return false;
-    G = { ...G, ...JSON.parse(saved) };
-    return true;
-}
-
-function startNewOrLoad() {
-    if (loadGame()) { render(); if (G.sel) selectCell(G.sel); } 
+    if (saved) { G = { ...G, ...JSON.parse(saved) }; render(); } 
     else { initGame(); }
 }
 
 function forceNewGame() {
-    const choice = document.getElementById('size-choice').value;
-    localStorage.removeItem('kryssord_save_' + choice);
+    localStorage.removeItem('kryssord_save_' + document.getElementById('size-choice').value);
     initGame();
 }
 
 function initGame() {
     const choice = document.getElementById('size-choice').value;
     G.size = choice === 'mini' ? 10 : choice === 'medium' ? 12 : 14;
-    G.target = choice === 'mini' ? 7 : choice === 'medium' ? 10 : 15;
+    G.target = choice === 'mini' ? 7 : choice === 'medium' ? 11 : 17;
+    
     G.grid = {}; G.words = []; G.user = {}; G.sel = null; G.markers = {}; G.dir = 'h';
     closeModals();
 
     let pool = getWordBank().sort(() => Math.random() - 0.5);
-    forcePlace(pool.pop(), 2, 2, 'h');
+    forcePlace(pool.pop(), Math.floor(G.size/2), 2, 'h');
 
-    for(let i = 0; i < 2000; i++) {
+    for(let attempt = 0; attempt < 3000; attempt++) {
         if(G.words.length >= G.target) break;
-        let w = pool[i % pool.length];
+        let w = pool[attempt % pool.length];
         if(G.words.find(ex => ex.w === w.w)) continue;
-        for(let p of G.words) {
-            for(let j=0; j<w.w.length; j++) {
-                let matchIdx = p.w.indexOf(w.w[j]);
-                if(matchIdx !== -1) {
-                    let nDir = p.dir === 'h' ? 'v' : 'h';
-                    let r = nDir === 'v' ? p.cells[matchIdx].r - j : p.cells[matchIdx].r;
-                    let c = nDir === 'h' ? p.cells[matchIdx].c - j : p.cells[matchIdx].c;
-                    if(isValid(w.w, r, c, nDir)) { forcePlace(w, r, c, nDir); break; }
+        outer: for(let p of G.words) {
+            for(let i=0; i<p.w.length; i++) {
+                for(let j=0; j<w.w.length; j++) {
+                    if(p.w[i] === w.w[j]) {
+                        let nDir = p.dir === 'h' ? 'v' : 'h';
+                        let r = nDir === 'v' ? p.cells[i].r - j : p.cells[i].r;
+                        let c = nDir === 'h' ? p.cells[i].c - j : p.cells[i].c;
+                        if(isValid(w.w, r, c, nDir)) { forcePlace(w, r, c, nDir); break outer; }
+                    }
                 }
             }
-            if(G.words.find(ex => ex.w === w.w)) break;
         }
     }
     let count = 1;
@@ -1260,15 +1287,16 @@ function initGame() {
 }
 
 function isValid(w, r, c, d) {
-    if(r < 1 || c < 1 || (d==='v' && r+w.length >= G.size-1) || (d==='h' && c+w.length >= G.size-1)) return false;
+    if(r < 0 || c < 0 || (d==='v' && r+w.length >= G.size) || (d==='h' && c+w.length >= G.size)) return false;
     for(let i=-1; i<=w.length; i++) {
         let rr = d==='v'?r+i:r, cc = d==='h'?c+i:c;
-        let cellExist = G.grid[`${rr}-${cc}`];
-        if(i === -1 || i === w.length) { if(cellExist) return false; continue; }
-        if(cellExist && cellExist !== w[i]) return false;
-        if(!cellExist) {
+        if(rr < 0 || rr >= G.size || cc < 0 || cc >= G.size) { if(i >= 0 && i < w.length) return false; continue; }
+        let existing = G.grid[`${rr}-${cc}`];
+        if(i === -1 || i === w.length) { if(existing) return false; } 
+        else {
+            if(existing && existing !== w[i]) return false;
             let neighbors = d==='h' ? [[rr-1,cc],[rr+1,cc]] : [[rr,cc-1],[rr,cc+1]];
-            for(let [nr,nc] of neighbors) if(G.grid[`${nr}-${nc}`]) return false;
+            if(!existing) { for(let [nr,nc] of neighbors) if(G.grid[`${nr}-${nc}`]) return false; }
         }
     }
     return true;
@@ -1286,7 +1314,9 @@ function forcePlace(w, r, c, d) {
 
 function render() {
     const el = document.getElementById("grid");
-    el.innerHTML = ""; el.style.gridTemplateColumns = `repeat(${G.size}, 32px)`;
+    el.innerHTML = ""; 
+    el.style.gridTemplateColumns = `repeat(${G.size}, 1fr)`;
+    el.style.gridTemplateRows = `repeat(${G.size}, 1fr)`;
     for(let r=0; r<G.size; r++) {
         for(let c=0; c<G.size; c++) {
             let k = `${r}-${c}`, d = document.createElement("div");
@@ -1311,7 +1341,6 @@ function selectCell(k) {
     if(G.sel === k && ws.length > 1) G.dir = (G.dir === 'h' ? 'v' : 'h');
     else { G.sel = k; if(!ws.find(o => o.dir === G.dir)) G.dir = ws[0].dir; }
     updateUI();
-    saveGame();
 }
 
 function getAW() { return G.words.find(w => w.dir === G.dir && w.cells.some(c => `${c.r}-${c.c}` === G.sel)); }
@@ -1325,23 +1354,32 @@ function checkActiveWord() {
 }
 
 function revealLetter() { if(G.sel) { G.user[G.sel] = G.grid[G.sel]; updateUI(); checkWin(); saveGame(); } }
-function revealWord() { let aw = getAW(); if(aw) { aw.cells.forEach(c => G.user[`${c.r}-${c.c}`] = G.grid[`${c.r}-${c.c}`]); updateUI(); checkWin(); saveGame(); } }
+
+/* NY FUNKSJON FOR Å AVSLØRE HELE ORDET */
+function revealFullWord() {
+    let aw = getAW();
+    if(aw) {
+        aw.cells.forEach((c, i) => {
+            G.user[`${c.r}-${c.c}`] = aw.w[i];
+        });
+        updateUI();
+        checkWin();
+        saveGame();
+    }
+}
+
 function resetCurrentWord() { let aw = getAW(); if(aw) { aw.cells.forEach(c => G.user[`${c.r}-${c.c}`] = ""); updateUI(); saveGame(); } }
 
 function checkWin() { 
-    if(Object.keys(G.grid).length > 0 && Object.keys(G.grid).every(k => G.user[k] === G.grid[k])) {
-        document.getElementById('win').style.display='flex';
-        const choice = document.getElementById('size-choice').value;
-        localStorage.removeItem('kryssord_save_' + choice);
-    } 
+    if(Object.keys(G.grid).length > 0 && Object.keys(G.grid).every(k => G.user[k] === G.grid[k])) document.getElementById('win').style.display='flex';
 }
 
 function updateUI() {
     document.querySelectorAll('.cell').forEach(e => e.classList.remove('active', 'track'));
     let aw = getAW();
     if(G.sel && aw) {
-        document.getElementById("c-"+G.sel).classList.add("active");
-        aw.cells.forEach(c => document.getElementById(`c-${c.r}-${c.c}`).classList.add('track'));
+        document.getElementById("c-"+G.sel)?.classList.add("active");
+        aw.cells.forEach(c => document.getElementById(`c-${c.r}-${c.c}`)?.classList.add('track'));
         let headK = `${aw.cells[0].r}-${aw.cells[0].c}`;
         document.getElementById("clue-bar").innerText = `${G.markers[headK]} ${G.dir==='h'?'VANNRETT':'LODDRETT'}: ${aw.c}`;
     }
@@ -1351,13 +1389,8 @@ function updateUI() {
 function handleInput(key) {
     let aw = getAW(); if(!aw) return;
     let idx = aw.cells.findIndex(c => `${c.r}-${c.c}` === G.sel);
-    if(key === "⌫") {
-        G.user[G.sel] = "";
-        if(idx > 0) G.sel = `${aw.cells[idx-1].r}-${aw.cells[idx-1].c}`;
-    } else {
-        G.user[G.sel] = key;
-        if(idx < aw.cells.length - 1) G.sel = `${aw.cells[idx+1].r}-${aw.cells[idx+1].c}`;
-    }
+    if(key === "⌫") { G.user[G.sel] = ""; if(idx > 0) G.sel = `${aw.cells[idx-1].r}-${aw.cells[idx-1].c}`; } 
+    else { G.user[G.sel] = key; if(idx < aw.cells.length - 1) G.sel = `${aw.cells[idx+1].r}-${aw.cells[idx+1].c}`; }
     updateUI(); checkWin(); saveGame();
 }
 
@@ -1365,7 +1398,7 @@ const kb = [["Q","W","E","R","T","Y","U","I","O","P","Å"],["A","S","D","F","G",
 kb.forEach(row => {
     let r = document.createElement("div"); r.className = "kb-row";
     row.forEach(key => {
-        let k = document.createElement("div"); k.className = "key"; k.innerText = key;
+        let k = document.createElement("button"); k.className = "key"; k.innerText = key;
         k.onclick = (e) => { e.preventDefault(); handleInput(key); }; r.appendChild(k);
     });
     document.getElementById("keyboard").appendChild(r);
