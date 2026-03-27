@@ -22,38 +22,11 @@
         }
 
         header { flex-shrink: 0; display: flex; justify-content: space-between; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid #334155; align-items: center; z-index: 100; }
-
-        #toast {
-    position: fixed;
-    bottom: 20%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #10b981;
-    color: white;
-    padding: 12px 24px;
-    border-radius: 50px;
-    font-weight: bold;
-    z-index: 10000;
-    display: none;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    animation: fadeInOut 2s ease-in-out;
-}
-
-@keyframes fadeInOut {
-    0% { opacity: 0; bottom: 15%; }
-    15% { opacity: 1; bottom: 20%; }
-    85% { opacity: 1; bottom: 20%; }
-    100% { opacity: 0; bottom: 15%; }
-}
         
-        /* HER ER STILEN FOR MELLOM/MINI/STOR-VELGEREN */
         #size-choice { 
-            padding: 6px; 
-            border-radius: 4px; 
-            background: #334155; /* Mørk grå/blå */
-            color: white; 
-            font-weight: bold; 
-            border: 1px solid #475569;
+            padding: 6px; border-radius: 4px; 
+            background: #334155; color: white; 
+            font-weight: bold; border: 1px solid #475569;
         }
         
         #clue-bar { flex-shrink: 0; padding: 10px; background: #334155; color: var(--accent); font-weight: 600; min-height: 50px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; text-align: center; border-bottom: 1px solid #475569; }
@@ -66,7 +39,7 @@
 
         .cell { 
             background: white; color: #1e293b; position: relative; display: flex; justify-content: center; align-items: center; font-weight: bold; 
-            font-size: 3cqw; cursor: pointer; container-type: size; z-index: 1;
+            font-size: 2.5cqw; cursor: pointer; container-type: size; z-index: 1;
         }
 
         .cell.black { background: var(--bg); border: none; cursor: default; }
@@ -81,6 +54,7 @@
         .kb-row { display: flex; justify-content: center; margin-bottom: 3px; }
         .key { margin: 1px; padding: 12px 0; background: #475569; border-radius: 4px; flex: 1; max-width: 36px; font-weight: bold; font-size: 14px; text-align: center; color: white; border: none; cursor: pointer; }
 
+        /* Modaler */
         .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.98); display: none; flex-direction: column; padding: 20px; z-index: 3000; overflow-y: auto; }
         button { padding: 6px 10px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
         .btn-blue { background: #2563eb; color: white; }
@@ -88,9 +62,23 @@
         .btn-red { background: #ef4444; color: white; }
         .btn-purple { background: #8b5cf6; color: white; }
 
+        /* Toast-melding (Istedenfor alert) */
+        #toast {
+            position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
+            background: #10b981; color: white; padding: 12px 24px; border-radius: 50px;
+            font-weight: bold; z-index: 10000; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            pointer-events: none;
+        }
+        .toast-active { display: block !important; animation: toastAnim 2s forwards; }
+        @keyframes toastAnim {
+            0% { opacity: 0; bottom: 100px; }
+            20% { opacity: 1; bottom: 120px; }
+            80% { opacity: 1; bottom: 120px; }
+            100% { opacity: 0; bottom: 140px; }
+        }
+
         .win-content { margin: auto; text-align: center; }
         .win-content h1 { font-size: 3.5rem; color: var(--accent); margin-bottom: 10px; }
-        .win-buttons { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -124,13 +112,15 @@
 
 <div id="keyboard"></div>
 
+<div id="toast">Lagret!</div>
+
 <div id="win" class="modal">
     <div class="win-content">
         <h1>🎉 HURRA!</h1>
-        <p>Du er en mester! Hele brettet er løst.</p>
-        <div class="win-buttons">
-            <button class="btn-blue" style="width: 220px; padding: 15px;" onclick="forceNewGame()">SPILL IGJEN</button>
-            <button class="btn-yellow" style="width: 220px; padding: 15px;" onclick="closeModals()">SE BRETTET</button>
+        <p>Du er en mester!</p>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px; align-items:center;">
+            <button class="btn-blue" style="width:200px; padding:15px;" onclick="forceNewGame()">SPILL IGJEN</button>
+            <button class="btn-yellow" style="width:200px; padding:15px;" onclick="closeModals()">SE BRETTET</button>
         </div>
     </div>
 </div>
@@ -1194,9 +1184,13 @@ const DEFAULT_WORDS = [
 
 let G = { size: 12, target: 11, grid: {}, words: [], user: {}, sel: null, dir: 'h', markers: {} };
 
-function getWordBank() {
-    const custom = JSON.parse(localStorage.getItem('custom_words') || '[]');
-    return [...DEFAULT_WORDS, ...custom];
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.classList.remove('toast-active');
+    void t.offsetWidth; // Trigger reflow
+    t.classList.add('toast-active');
+    setTimeout(() => t.classList.remove('toast-active'), 2000);
 }
 
 function startNewOrLoad() {
@@ -1220,7 +1214,7 @@ function initGame() {
     G.grid = {}; G.words = []; G.user = {}; G.sel = null; G.markers = {}; G.dir = 'h';
     closeModals();
 
-    let pool = getWordBank().sort(() => Math.random() - 0.5);
+    let pool = [...DEFAULT_WORDS, ...JSON.parse(localStorage.getItem('custom_words') || '[]')].sort(() => Math.random() - 0.5);
     forcePlace(pool.pop(), 1, 1, 'h');
 
     for(let attempt = 0; attempt < 3000; attempt++) {
@@ -1284,8 +1278,7 @@ function render() {
             d.className = "cell" + (G.grid[k] ? "" : " black");
             if(G.grid[k]) {
                 if(G.markers[k]) d.innerHTML = `<span class="number">${G.markers[k]}</span>`;
-                let t = document.createElement("div"); t.id = "t-"+k; 
-                t.innerText = G.user[k] || "";
+                let t = document.createElement("div"); t.id = "t-"+k; t.innerText = G.user[k] || "";
                 d.appendChild(t);
                 d.onclick = (e) => { e.stopPropagation(); selectCell(k); };
             }
@@ -1342,20 +1335,12 @@ function resetCurrentWord() {
 
 function checkWin() { 
     const isFull = Object.keys(G.grid).length > 0 && Object.keys(G.grid).every(k => G.user[k] === G.grid[k]);
-    
     if(isFull) {
-        // 1. Vis vinn-vinduet med en gang
         document.getElementById('win').style.display = 'flex';
-        
-        // 2. Skyt konfetti som legger seg OVER vinduet
-        confetti({ 
-            particleCount: 180, 
-            spread: 80, 
-            origin: { y: 0.6 },
-            zIndex: 9999 // Dette tvinger konfettien foran alt annet!
-        });
+        confetti({ particleCount: 180, spread: 80, origin: { y: 0.6 }, zIndex: 9999 });
     }
 }
+
 function updateUI() {
     document.querySelectorAll('.cell').forEach(e => e.classList.remove('active', 'track'));
     let aw = getAW();
@@ -1380,7 +1365,11 @@ function handleInput(key) {
 function saveToStudyList() {
     let aw = getAW(); if(!aw) return;
     let list = JSON.parse(localStorage.getItem('study_list') || '[]');
-    if(!list.find(i => i.w === aw.w)) { list.push({w: aw.w, c: aw.c}); localStorage.setItem('study_list', JSON.stringify(list)); alert("Lagret!"); }
+    if(!list.find(i => i.w === aw.w)) { 
+        list.push({w: aw.w, c: aw.c}); 
+        localStorage.setItem('study_list', JSON.stringify(list)); 
+        showToast("Lagret i glosebok!");
+    }
 }
 
 function openWordBook() {
@@ -1414,7 +1403,8 @@ function addNewWordToBank() {
     custom.push({w, c});
     localStorage.setItem('custom_words', JSON.stringify(custom));
     document.getElementById('new-word').value = ""; document.getElementById('new-clue').value = "";
-    closeModals(); alert("Lagret!");
+    closeModals(); 
+    showToast("Nytt ord lagt til!");
 }
 
 function saveGame() {
