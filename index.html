@@ -22,6 +22,29 @@
         }
 
         header { flex-shrink: 0; display: flex; justify-content: space-between; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid #334155; align-items: center; z-index: 100; }
+
+        #toast {
+    position: fixed;
+    bottom: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #10b981;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-weight: bold;
+    z-index: 10000;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    animation: fadeInOut 2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; bottom: 15%; }
+    15% { opacity: 1; bottom: 20%; }
+    85% { opacity: 1; bottom: 20%; }
+    100% { opacity: 0; bottom: 15%; }
+}
         
         /* HER ER STILEN FOR MELLOM/MINI/STOR-VELGEREN */
         #size-choice { 
